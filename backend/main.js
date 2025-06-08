@@ -25,15 +25,6 @@ io.on("connection", (socket) => {
       .then((room) => {
         if (room) {
           socket.emit("roomMessages", { roomId, messages: room.messages });
-
-          room.messages.forEach((message) => {
-            console.log(message.userEmail, message.msg);
-            socket.emit("privateMessage", {
-              roomId,
-              userEmail: message.userEmail,
-              msg: message.msg,
-            });
-          });
         } else {
           socket.emit("roomMessages", { roomId, messages: [] });
         }
