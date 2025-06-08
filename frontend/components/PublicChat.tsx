@@ -1,5 +1,8 @@
+"use client";
+
 import socket from "@/config/sockets";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
+import "../app/globals.css";
 
 type PropType = {
   userEmail: string;
@@ -42,9 +45,12 @@ export default function PublicChat({ userEmail }: PropType) {
   useEffect(() => {
     if (listenerAttached.current) return;
 
+    socket.emit("JoinpublicRoom", { userEmail });
+
     socket.on("publicMessage", (data: MessageType) => {
       setMessages((prev) => [...prev, data]);
     });
+
     socket.on("publicMessages", (data: MessageType[]) => {
       setMessages(data);
     });
@@ -53,6 +59,7 @@ export default function PublicChat({ userEmail }: PropType) {
 
     return () => {
       socket.off("publicMessage");
+      socket.off("publicMessages");
       listenerAttached.current = false;
     };
   }, []);
@@ -64,25 +71,21 @@ export default function PublicChat({ userEmail }: PropType) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-green-200 to-emerald-300 flex flex-col items-center p-6">
-      <div className="w-full max-w-3xl bg-white shadow-xl rounded-xl p-6 flex flex-col">
-        <header className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-extrabold text-green-800 flex items-center gap-2">
+    <div className="flex flex-col h-screen w-screen bg-gradient-to-br from-green-200 to-emerald-300 items-center justify-center p-2 sm:p-4">
+      <div className="w-full max-w-3xl bg-white shadow-lg rounded-lg p-4 flex flex-col h-full">
+        <header className="flex justify-between items-center mb-4">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-green-800">
             🌐 Public Chat
           </h1>
           <button
-            className="text-sm text-green-600 hover:text-green-800 font-semibold cursor-pointer"
+            className="text-sm text-green-600 hover:text-green-800 font-semibold"
             onClick={() => window.location.reload()}
-            aria-label="Leave public chat"
           >
             Leave
           </button>
         </header>
 
-        <div
-          className="flex-1 overflow-y-auto space-y-4 px-4 py-2 bg-gray-50 rounded-lg border border-gray-300 scrollbar-thin scrollbar-thumb-green-400 scrollbar-track-green-100"
-          style={{ maxHeight: "400px" }}
-        >
+        <div className="flex-1 overflow-y-auto space-y-3 px-2 py-2 bg-gray-50 rounded-lg border border-gray-300">
           {messages.length === 0 ? (
             <p className="text-gray-500 text-center mt-20 select-none">
               No messages yet. Say hi!
@@ -93,16 +96,14 @@ export default function PublicChat({ userEmail }: PropType) {
               return (
                 <div
                   key={i}
-                  className={`max-w-md px-4 py-2 rounded-xl relative animate-fadeIn
-                    ${
-                      isOwn
-                        ? "bg-green-200 ml-auto text-right"
-                        : "bg-white border border-gray-300"
-                    }`}
-                  style={{ animationDuration: "0.3s" }}
+                  className={`max-w-md px-4 py-2 rounded-xl animate-fadeIn ${
+                    isOwn
+                      ? "bg-green-200 ml-auto text-right"
+                      : "bg-white border border-gray-300"
+                  }`}
                 >
-                  <p className="text-gray-800">{el.msg}</p>
-                  <div className="flex justify-between items-center mt-1 text-xs text-gray-500 select-none">
+                  <p className="text-gray-800 break-words">{el.msg}</p>
+                  <div className="flex justify-between text-xs text-gray-500 mt-1 select-none">
                     <span>{isOwn ? "You" : el.userEmail}</span>
                     <time>{formatTime(el.timestamp)}</time>
                   </div>
@@ -115,21 +116,20 @@ export default function PublicChat({ userEmail }: PropType) {
 
         <form
           onSubmit={handleSendPublicMsg}
-          className="mt-6 flex gap-3 items-center"
-          aria-label="Send public message"
+          className="mt-4 flex flex-col sm:flex-row gap-3 w-full"
         >
           <input
             type="text"
             placeholder="Write your message..."
-            className="flex-1 rounded-full border border-green-400 px-4 py-2 focus:outline-none focus:ring-4 focus:ring-green-300 transition"
+            className="w-full sm:flex-1 rounded-full border border-green-400 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
             value={msg}
             onChange={(e) => setMsg(e.target.value)}
             required
-            autoComplete="off"
           />
+
           <button
             type="submit"
-            className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-full shadow-lg transition"
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-full shadow transition"
           >
             Send
           </button>
@@ -148,8 +148,7 @@ export default function PublicChat({ userEmail }: PropType) {
           }
         }
         .animate-fadeIn {
-          animation-name: fadeIn;
-          animation-fill-mode: both;
+          animation: fadeIn 0.3s ease-in-out both;
         }
       `}</style>
     </div>

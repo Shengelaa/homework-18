@@ -26,13 +26,19 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100 p-8 flex flex-col items-center">
+    <div
+      className={`${
+        showChat || showPublicChat
+          ? "h-screen w-screen bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100"
+          : "min-h-screen bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100 p-8 flex flex-col items-center"
+      } box-border`}
+    >
       {showChat ? (
         <Chat roomId={roomId} userEmail={userEmail} />
       ) : showPublicChat ? (
         <PublicChat userEmail={publicEmail} roomId="public" />
       ) : (
-        <div className="w-full max-w-3xl space-y-10">
+        <div className="w-full max-w-3xl space-y-10 box-border">
           <h1 className="text-4xl font-extrabold text-center text-indigo-800 drop-shadow-lg mb-6">
             🌐 Real-Time Chat App
           </h1>
