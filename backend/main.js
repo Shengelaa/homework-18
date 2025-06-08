@@ -11,10 +11,11 @@ connectToDb();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: "*",
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
 });
-const cors = require("cors");
-app.use(cors({ origin: "*" }));
 
 io.on("connection", (socket) => {
   socket.on("joinRoom", async ({ roomId, userEmail }) => {
@@ -77,6 +78,7 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(4000, () => {
-  console.log("server running on http://localhost:4000");
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

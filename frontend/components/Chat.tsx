@@ -41,7 +41,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
   };
 
   useEffect(() => {
-    if (listenerAttached.current) return; 
+    if (listenerAttached.current) return;
 
     socket.on("privateMessage", (data: MessageType) => {
       setMessages((prev) => [...prev, data]);
@@ -69,7 +69,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
             💬 Room: {roomId}
           </h1>
           <button
-            className="text-sm text-purple-600 hover:text-purple-800 font-semibold"
+            className="text-sm text-purple-600 hover:text-purple-800 font-semibold cursor-pointer"
             onClick={() => window.location.reload()}
             aria-label="Leave room"
           >
@@ -77,7 +77,6 @@ export default function Chat({ roomId, userEmail }: PropType) {
           </button>
         </header>
 
-      
         <div
           className="flex-1 overflow-y-auto space-y-4 px-4 py-2 bg-gray-50 rounded-lg border border-gray-300 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-purple-100"
           style={{ maxHeight: "400px" }}
@@ -112,7 +111,6 @@ export default function Chat({ roomId, userEmail }: PropType) {
           <div ref={messagesEndRef} />
         </div>
 
-
         <form
           onSubmit={handleSendPrivateMsg}
           className="mt-6 flex gap-3 items-center"
@@ -136,7 +134,6 @@ export default function Chat({ roomId, userEmail }: PropType) {
         </form>
       </div>
 
- 
       <style jsx>{`
         @keyframes fadeIn {
           from {

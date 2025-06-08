@@ -46,8 +46,8 @@ export default function PublicChat({ userEmail }: PropType) {
       setMessages((prev) => [...prev, data]);
     });
     socket.on("publicMessages", (data: MessageType[]) => {
-    setMessages(data);
-  });
+      setMessages(data);
+    });
 
     listenerAttached.current = true;
 
@@ -71,7 +71,7 @@ export default function PublicChat({ userEmail }: PropType) {
             🌐 Public Chat
           </h1>
           <button
-            className="text-sm text-green-600 hover:text-green-800 font-semibold"
+            className="text-sm text-green-600 hover:text-green-800 font-semibold cursor-pointer"
             onClick={() => window.location.reload()}
             aria-label="Leave public chat"
           >

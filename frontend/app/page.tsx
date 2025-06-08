@@ -43,7 +43,7 @@ export default function Home() {
             </h2>
             <form onSubmit={handlePublicJoin} className="space-y-4">
               <input
-                type="text"
+                type="email"
                 placeholder="Your Email"
                 className="w-full p-3 border border-green-300 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-green-300 transition"
                 value={publicEmail}
@@ -53,7 +53,7 @@ export default function Home() {
               />
               <button
                 type="submit"
-                className="w-full bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 shadow-md transition"
+                className="w-full bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 shadow-md transition cursor-pointer"
               >
                 Join Public Chat
               </button>
@@ -75,8 +75,8 @@ export default function Home() {
                 aria-label="Room ID input"
               />
               <input
-                type="text"
-                placeholder="Your Name"
+                type="email"
+                placeholder="Your Email"
                 className="w-full p-3 border border-purple-300 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-purple-300 transition"
                 value={userEmail}
                 onChange={(e) => setUserEmail(e.target.value)}
@@ -85,7 +85,7 @@ export default function Home() {
               />
               <button
                 type="submit"
-                className="w-full bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md transition"
+                className="w-full bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md transition cursor-pointer"
               >
                 Join Chat Room
               </button>
