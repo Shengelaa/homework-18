@@ -13,6 +13,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: "*",
 });
+const cors = require("cors");
+app.use(cors({ origin: "*" }));
 
 io.on("connection", (socket) => {
   socket.on("joinRoom", async ({ roomId, userEmail }) => {
