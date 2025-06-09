@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import socket from "@/config/sockets";
+import { useEffect, useMemo, useState } from "react";
+import getSocket from "@/config/sockets";
 
 type PublicMessage = {
   _id: string;
@@ -26,20 +26,23 @@ export default function Admin() {
   const [privateRooms, setPrivateRooms] = useState<PrivateRoom[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    socket.emit("adminPannel");
+  // Only create socket in the browser
+  const socket = useMemo(() => getSocket(), []);
 
-    socket.on("adminPannel", ({ publicMessages, privateMessages }) => {
+  useEffect(() => {
+    socket?.emit("adminPannel");
+
+    socket?.on("adminPannel", ({ publicMessages, privateMessages }) => {
       setPublicMessages(publicMessages);
       setPrivateRooms(privateMessages);
       setLoading(false);
     });
 
-    socket.on("publicMessagesUpdated", (updatedPublicMessages) => {
+    socket?.on("publicMessagesUpdated", (updatedPublicMessages) => {
       setPublicMessages(updatedPublicMessages);
     });
 
-    socket.on("privateMessagesUpdated", (updatedMessages) => {
+    socket?.on("privateMessagesUpdated", (updatedMessages) => {
       setPrivateRooms((rooms) =>
         rooms.map((room) => {
           if (
@@ -53,24 +56,24 @@ export default function Admin() {
       );
     });
 
-    socket.on("privateRoomsUpdated", () => {
-      socket.emit("adminPannel");
+    socket?.on("privateRoomsUpdated", () => {
+      socket?.emit("adminPannel");
     });
 
     return () => {
-      socket.off("adminPannel");
-      socket.off("publicMessagesUpdated");
-      socket.off("privateMessagesUpdated");
-      socket.off("privateRoomsUpdated");
+      socket?.off("adminPannel");
+      socket?.off("publicMessagesUpdated");
+      socket?.off("privateMessagesUpdated");
+      socket?.off("privateRoomsUpdated");
     };
-  }, []);
+  }, [socket]);
 
   const handleDeletePublicMessage = (messageId: string) => {
-    socket.emit("deletePublicMessage", { messageId });
+    socket?.emit("deletePublicMessage", { messageId });
   };
 
   const handleDeletePrivateMessage = (roomId: string, messageId: string) => {
-    socket.emit("deletePrivateMessage", { roomId, messageId });
+    socket?.emit("deletePrivateMessage", { roomId, messageId });
   };
 
   const handleDeletePrivateRoom = (roomId: string) => {
@@ -79,7 +82,7 @@ export default function Admin() {
         `Are you sure you want to delete room ${roomId} and all its messages?`
       )
     ) {
-      socket.emit("deletePrivateRoom", { roomId });
+      socket?.emit("deletePrivateRoom", { roomId });
     }
   };
 

@@ -1,7 +1,7 @@
 "use client";
 
-import socket from "@/config/sockets";
-import React, { FormEvent, useEffect, useRef, useState } from "react";
+import getSocket from "@/config/sockets";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "../app/globals.css";
 
 type PropType = {
@@ -19,6 +19,9 @@ export default function PublicChat({ userEmail }: PropType) {
   const [msg, setMsg] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const listenerAttached = useRef(false);
+
+  // Only create socket in the browser
+  const socket = useMemo(() => getSocket(), []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,31 +41,31 @@ export default function PublicChat({ userEmail }: PropType) {
       timestamp: new Date().toISOString(),
     };
 
-    socket.emit("publicMessage", newMsg);
+    socket?.emit("publicMessage", newMsg);
     setMsg("");
   };
 
   useEffect(() => {
     if (listenerAttached.current) return;
 
-    socket.emit("JoinpublicRoom", { userEmail });
+    socket?.emit("JoinpublicRoom", { userEmail });
 
-    socket.on("publicMessage", (data: MessageType) => {
+    socket?.on("publicMessage", (data: MessageType) => {
       setMessages((prev) => [...prev, data]);
     });
 
-    socket.on("publicMessages", (data: MessageType[]) => {
+    socket?.on("publicMessages", (data: MessageType[]) => {
       setMessages(data);
     });
 
     listenerAttached.current = true;
 
     return () => {
-      socket.off("publicMessage");
-      socket.off("publicMessages");
+      socket?.off("publicMessage");
+      socket?.off("publicMessages");
       listenerAttached.current = false;
     };
-  }, []);
+  }, [socket, userEmail]);
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return "";

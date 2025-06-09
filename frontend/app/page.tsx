@@ -3,8 +3,8 @@
 import Chat from "@/components/Chat";
 import PublicChat from "@/components/PublicChat";
 import Admin from "@/components/Admin";
-import socket from "@/config/sockets";
-import { FormEvent, useState } from "react";
+import getSocket from "@/config/sockets";
+import { FormEvent, useMemo, useState } from "react";
 
 export default function Home() {
   const [publicEmail, setPublicEmail] = useState("");
@@ -15,15 +15,18 @@ export default function Home() {
   const [showPublicChat, setShowPublicChat] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
+  // Only create socket in the browser
+  const socket = useMemo(() => getSocket(), []);
+
   const handleJoinRoom = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    socket.emit("joinRoom", { roomId, userEmail });
+    socket?.emit("joinRoom", { roomId, userEmail });
     setShowChat(true);
   };
 
   const handlePublicJoin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    socket.emit("JoinpublicRoom", { userEmail: publicEmail });
+    socket?.emit("JoinpublicRoom", { userEmail: publicEmail });
     setShowPublicChat(true);
   };
 

@@ -1,8 +1,8 @@
 "use client";
 
 import heic2any from "heic2any";
-import socket from "@/config/sockets";
-import React, { FormEvent, useEffect, useRef, useState } from "react";
+import getSocket from "@/config/sockets";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "../app/globals.css";
 import cameraImg from "../public/cam.png";
 
@@ -22,6 +22,9 @@ export default function Chat({ roomId, userEmail }: PropType) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const listenerAttached = useRef(false);
 
+  // Only create socket in the browser
+  const socket = useMemo(() => getSocket(), []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -39,7 +42,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
       msg,
       timestamp: new Date().toISOString(),
     };
-    socket.emit("privateMessage", newMsg);
+    socket?.emit("privateMessage", newMsg);
     setMsg("");
   };
 
@@ -73,21 +76,21 @@ export default function Chat({ roomId, userEmail }: PropType) {
         msg: base64String,
         timestamp: new Date().toISOString(),
       };
-      socket.emit("privateMessage", newMsg);
+      socket?.emit("privateMessage", newMsg);
     };
     reader.readAsDataURL(uploadFile);
   };
 
   useEffect(() => {
-    socket.emit("joinRoom", { roomId, userEmail });
+    socket?.emit("joinRoom", { roomId, userEmail });
 
     if (listenerAttached.current) return;
 
-    socket.on("privateMessage", (data: MessageType) => {
+    socket?.on("privateMessage", (data: MessageType) => {
       setMessages((prev) => [...prev, data]);
     });
 
-    socket.on(
+    socket?.on(
       "roomMessages",
       ({ messages: initialMessages }: { messages: MessageType[] }) => {
         setMessages(initialMessages || []);
@@ -97,11 +100,11 @@ export default function Chat({ roomId, userEmail }: PropType) {
     listenerAttached.current = true;
 
     return () => {
-      socket.off("privateMessage");
-      socket.off("roomMessages");
+      socket?.off("privateMessage");
+      socket?.off("roomMessages");
       listenerAttached.current = false;
     };
-  }, []);
+  }, [socket, roomId, userEmail]);
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return "";
