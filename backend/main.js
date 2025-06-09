@@ -104,6 +104,21 @@ io.on("connection", (socket) => {
 
   socket.on("deletePublicMessage", async ({ messageId }) => {
     try {
+      // Find and delete the message
+      const message = await publicChatModel.findById(messageId);
+      if (
+        message &&
+        message.msg &&
+        message.msg.startsWith("https://res.cloudinary.com")
+      ) {
+    
+        const publicId = message.msg
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split(".")[0];
+        await deleteFromCloudinary(publicId);
+      }
       await publicChatModel.findByIdAndDelete(messageId);
       const publicMessages = await publicChatModel.find();
       io.emit("publicMessagesUpdated", publicMessages);
@@ -128,13 +143,28 @@ io.on("connection", (socket) => {
         return socket.emit("error", "Room not found");
       }
 
+ 
+      const messageToDelete = room.messages.id(messageId);
+      if (
+        messageToDelete &&
+        typeof messageToDelete.msg === "string" &&
+        messageToDelete.msg.startsWith("https://res.cloudinary.com")
+      ) {
+
+        const publicId = messageToDelete.msg
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split(".")[0];
+        await deleteFromCloudinary(publicId);
+      }
+
       room.messages = room.messages.filter(
         (message) => message._id.toString() !== messageId
       );
 
       await room.save();
 
-      // Emit both roomId and updated messages for correct frontend update
       io.to(roomId).emit("privateMessagesUpdated", {
         roomId,
         messages: room.messages,
@@ -149,6 +179,23 @@ io.on("connection", (socket) => {
 
   socket.on("deletePrivateRoom", async ({ roomId }) => {
     try {
+      // Optionally, delete all images in this room from Cloudinary
+      const room = await privateMessageModel.findOne({ roomId });
+      if (room) {
+        for (const message of room.messages) {
+          if (
+            typeof message.msg === "string" &&
+            message.msg.startsWith("https://res.cloudinary.com")
+          ) {
+            const publicId = message.msg
+              .split("/")
+              .slice(-2)
+              .join("/")
+              .split(".")[0];
+            await deleteFromCloudinary(publicId);
+          }
+        }
+      }
       await privateMessageModel.deleteOne({ roomId });
       io.emit("privateRoomsUpdated");
     } catch (error) {
