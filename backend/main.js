@@ -68,7 +68,6 @@ io.on("connection", (socket) => {
     io.to("publicRoom").emit("publicMessage", { userEmail, msg });
   });
 
-
   socket.on("deletePublicMessage", async ({ messageId }) => {
     try {
       await publicChatModel.findByIdAndDelete(messageId);
@@ -82,30 +81,32 @@ io.on("connection", (socket) => {
     const publicMessages = await publicChatModel.find();
     const privateMessages = await privateMessageModel.find();
 
-    console.log("Admin panel data:", { publicMessages, privateMessages }); 
+    console.log("Admin panel data:", { publicMessages, privateMessages });
 
     socket.emit("adminPannel", { publicMessages, privateMessages });
   });
 
-
   socket.on("deletePrivateMessage", async ({ roomId, messageId }) => {
     try {
       const room = await privateMessageModel.findOne({ roomId });
-      if (!room) return;
+      if (!room) {
+        return socket.emit("error", "Room not found");
+      }
 
-  
       room.messages = room.messages.filter(
-        (msg) => msg._id.toString() !== messageId
+        (message) => message._id.toString() !== messageId
       );
+
       await room.save();
 
       io.to(roomId).emit("privateMessagesUpdated", room.messages);
-      socket.emit("privateMessageDeleted", { roomId, messageId });
-    } catch (error) {
-      console.error("Error deleting private message:", error);
+
+      io.emit("privateRoomsUpdated");
+    } catch (err) {
+      console.error("Error deleting private message:", err);
+      socket.emit("error", "Failed to delete private message");
     }
   });
-
 
   socket.on("deletePrivateRoom", async ({ roomId }) => {
     try {
