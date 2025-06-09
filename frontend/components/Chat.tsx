@@ -1,8 +1,8 @@
 "use client";
 
+import React, { useState, useEffect, useRef, FormEvent } from "react";
 import heic2any from "heic2any";
 import getSocket from "@/config/sockets";
-import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import "../app/globals.css";
 import cameraImg from "../public/cam.png";
 
@@ -17,43 +17,70 @@ type MessageType = PropType & {
 };
 
 export default function Chat({ roomId, userEmail }: PropType) {
+  const [socket, setSocket] = useState<any>(null);
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [msg, setMsg] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const listenerAttached = useRef(false);
-
-  // Only create socket in the browser
-  const socket = useMemo(() => getSocket(), []);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
 
   useEffect(() => {
-    scrollToBottom();
+    if (typeof window !== "undefined") {
+      const s = getSocket();
+      setSocket(s);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.emit("joinRoom", { roomId, userEmail });
+
+    const handlePrivateMessage = (data: MessageType) => {
+      setMessages((prev) => [...prev, data]);
+    };
+
+    const handleRoomMessages = ({
+      messages: initialMessages,
+    }: {
+      messages: MessageType[];
+    }) => {
+      setMessages(initialMessages || []);
+    };
+
+    socket.on("privateMessage", handlePrivateMessage);
+    socket.on("roomMessages", handleRoomMessages);
+
+    return () => {
+      socket.off("privateMessage", handlePrivateMessage);
+      socket.off("roomMessages", handleRoomMessages);
+    };
+  }, [socket, roomId, userEmail]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSendPrivateMsg = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!msg.trim()) return;
+    if (!msg.trim() || !socket) return;
+
     const newMsg = {
       roomId,
       userEmail,
       msg,
       timestamp: new Date().toISOString(),
     };
-    socket?.emit("privateMessage", newMsg);
+
+    socket.emit("privateMessage", newMsg);
     setMsg("");
   };
 
   const handleImageUpload = async (file: File) => {
+    if (!socket) return;
+
     let uploadFile = file;
     if (file.type === "image/heic" || file.name.endsWith(".heic")) {
       try {
-        const converted = await heic2any({
-          blob: file,
-          toType: "image/jpeg",
-        });
+        const converted = await heic2any({ blob: file, toType: "image/jpeg" });
         const convertedBlob = Array.isArray(converted)
           ? converted[0]
           : converted;
@@ -63,10 +90,11 @@ export default function Chat({ roomId, userEmail }: PropType) {
           { type: "image/jpeg" }
         );
       } catch (err) {
-        alert("Failed to convert HEIC image. Please try another image.");
+        alert("Failed to convert HEIC image. Try another image.");
         return;
       }
     }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
@@ -76,35 +104,10 @@ export default function Chat({ roomId, userEmail }: PropType) {
         msg: base64String,
         timestamp: new Date().toISOString(),
       };
-      socket?.emit("privateMessage", newMsg);
+      socket.emit("privateMessage", newMsg);
     };
     reader.readAsDataURL(uploadFile);
   };
-
-  useEffect(() => {
-    socket?.emit("joinRoom", { roomId, userEmail });
-
-    if (listenerAttached.current) return;
-
-    socket?.on("privateMessage", (data: MessageType) => {
-      setMessages((prev) => [...prev, data]);
-    });
-
-    socket?.on(
-      "roomMessages",
-      ({ messages: initialMessages }: { messages: MessageType[] }) => {
-        setMessages(initialMessages || []);
-      }
-    );
-
-    listenerAttached.current = true;
-
-    return () => {
-      socket?.off("privateMessage");
-      socket?.off("roomMessages");
-      listenerAttached.current = false;
-    };
-  }, [socket, roomId, userEmail]);
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return "";
@@ -112,9 +115,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const isImageUrl = (url: string) =>
-    url.startsWith("https://res.cloudinary.com") &&
-    /\.(jpg|jpeg|png|webp|gif|svg)$/.test(url);
+  const isImageData = (msg: string) => msg.startsWith("data:image/");
 
   return (
     <div className="flex flex-col h-screen w-screen bg-gradient-to-br from-purple-200 to-indigo-300 p-2 sm:p-4">
@@ -151,7 +152,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
                   }`}
                 >
                   <p className="text-gray-800 break-words">
-                    {isImageUrl(el.msg) ? (
+                    {isImageData(el.msg) ? (
                       <img
                         src={el.msg}
                         alt="sent"
@@ -186,7 +187,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
           />
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/heic"
+            accept="image/*"
             id="imageInput"
             hidden
             onChange={(e) => {
@@ -196,7 +197,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
           />
           <label
             htmlFor="imageInput"
-            className="flex items-center justify-center  max-w-[60px] w-full bg-purple-600 rounded-full cursor-pointer"
+            className="flex items-center justify-center max-w-[60px] w-full bg-purple-600 rounded-full cursor-pointer"
           >
             <img
               src={cameraImg.src}
