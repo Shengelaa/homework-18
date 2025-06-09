@@ -18,7 +18,7 @@ export default function Home() {
   const [totalMessages, setTotalMessages] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:4000/count")
+    fetch("https://homework-18-production-8b06.up.railway.app/count")
       .then((res) => res.json())
       .then((data) => {
         setTotalMessages(data.count ?? 0);
