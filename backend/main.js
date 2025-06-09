@@ -3,12 +3,17 @@ const express = require("express");
 const connectToDb = require("./db/connectToDb");
 const publicChatModel = require("./models/publicChat.model");
 const privateMessageModel = require("./models/privateChat.model");
+const globalSmsCounter = require("./models/globalSmsCounter");
 const {
   upload,
   deleteFromCloudinary,
 } = require("./config/connectToCloudinary");
 const { Server } = require("socket.io");
+
+const cors = require("cors");
 const app = express();
+
+app.use(express.json());
 connectToDb();
 
 const server = http.createServer(app);
@@ -19,6 +24,13 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
+
+app.use(
+  cors({
+    origin: "https://chatapplication-sigma.vercel.app/", 
+    credentials: true,
+  })
+);
 
 const isBase64Image = (str) => {
   return typeof str === "string" && str.startsWith("data:image/");
@@ -66,6 +78,15 @@ io.on("connection", (socket) => {
       await newMessage.save();
     }
 
+    await globalSmsCounter.findOneAndUpdate(
+      {},
+      { $inc: { "globalSmsCount.number": 1 } },
+      { upsert: true, new: true }
+    );
+    // In your backend, after incrementing the counter:
+    const updated = await globalSmsCounter.findOne({});
+    io.emit("globalSmsCountUpdated", updated.globalSmsCount.number);
+
     io.to(roomId).emit("privateMessage", {
       roomId,
       userEmail,
@@ -96,6 +117,13 @@ io.on("connection", (socket) => {
 
     const newMessage = new publicChatModel({ userEmail, msg: messageContent });
     await newMessage.save();
+
+    await globalSmsCounter.findOneAndUpdate(
+      {},
+      { $inc: { "globalSmsCount.number": 1 } },
+      { upsert: true, new: true }
+    );
+
     io.to("publicRoom").emit("publicMessage", {
       userEmail,
       msg: messageContent,
@@ -104,7 +132,6 @@ io.on("connection", (socket) => {
 
   socket.on("deletePublicMessage", async ({ messageId }) => {
     try {
-      // Find and delete the message
       const message = await publicChatModel.findById(messageId);
       if (
         message &&
@@ -129,10 +156,19 @@ io.on("connection", (socket) => {
   socket.on("adminPannel", async () => {
     const publicMessages = await publicChatModel.find();
     const privateMessages = await privateMessageModel.find();
+    const globalCounter = await globalSmsCounter.findOne({});
 
-    console.log("Admin panel data:", { publicMessages, privateMessages });
+    console.log("Admin panel data:", {
+      publicMessages,
+      privateMessages,
+      globalCounter,
+    });
 
-    socket.emit("adminPannel", { publicMessages, privateMessages });
+    socket.emit("adminPannel", {
+      publicMessages,
+      privateMessages,
+      globalCounter,
+    });
   });
 
   socket.on("deletePrivateMessage", async ({ roomId, messageId }) => {
@@ -176,7 +212,6 @@ io.on("connection", (socket) => {
 
   socket.on("deletePrivateRoom", async ({ roomId }) => {
     try {
-      // Optionally, delete all images in this room from Cloudinary
       const room = await privateMessageModel.findOne({ roomId });
       if (room) {
         for (const message of room.messages) {
@@ -201,6 +236,14 @@ io.on("connection", (socket) => {
   });
 });
 
+app.get("/count", async (req, res) => {
+  try {
+    const counter = await globalSmsCounter.findOne({});
+    res.json({ count: counter?.globalSmsCount?.number ?? 0 });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch count" });
+  }
+});
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -3,8 +3,9 @@
 import Chat from "@/components/Chat";
 import PublicChat from "@/components/PublicChat";
 import Admin from "@/components/Admin";
+import Sms from "../public/Sms.png";
 import socket from "@/config/sockets";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function Home() {
   const [publicEmail, setPublicEmail] = useState("");
@@ -14,6 +15,25 @@ export default function Home() {
   const [showChat, setShowChat] = useState(false);
   const [showPublicChat, setShowPublicChat] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [totalMessages, setTotalMessages] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("http://localhost:4000/count")
+      .then((res) => res.json())
+      .then((data) => {
+        setTotalMessages(data.count ?? 0);
+        console.log(data.count);
+      })
+      .catch(() => setTotalMessages(0));
+
+    socket.on("globalSmsCountUpdated", (count: number) => {
+      setTotalMessages(count);
+    });
+
+    return () => {
+      socket.off("globalSmsCountUpdated");
+    };
+  }, []);
 
   const handleJoinRoom = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,8 +73,12 @@ export default function Home() {
         <PublicChat userEmail={publicEmail} roomId="public" />
       ) : (
         <div className="w-full max-w-3xl space-y-10 box-border">
-          <h1 className="text-4xl font-extrabold text-center text-indigo-800 drop-shadow-lg mb-6">
-            🌐 Real-Time Chat App
+          <h1 className="text-2xl font-extrabold text-center text-indigo-800 mt-2 drop-shadow-lg mb-6">
+            Real-Time Chat App
+          </h1>
+          <h1 className="mb-[10px] ml-[2px] text-[17px] font-semibold family-arial text-blue-700 flex items-center justify-start flex-row  ">
+            <img src={Sms.src} alt="" width={25} /> Total Messages:&nbsp;
+            <span>{totalMessages === null ? "Loading..." : totalMessages}</span>
           </h1>
 
           <section className="bg-white p-8 rounded-2xl shadow-xl ring-1 ring-green-200 hover:ring-green-300 transition">
