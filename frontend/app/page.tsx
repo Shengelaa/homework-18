@@ -78,7 +78,8 @@ export default function Home() {
             Real-Time Chat App
           </h1>
           <h1 className="mb-[10px] ml-[2px] text-[17px] font-semibold family-arial text-blue-700 flex items-center justify-start flex-row  ">
-            <img src={Sms.src} alt="" width={25} /> Total Messages:&nbsp;
+            <img src={Sms.src} alt="" width={25} />
+            Total Sent MSG:&nbsp;
             <span>{totalMessages === null ? "Loading..." : totalMessages}</span>
           </h1>
 
