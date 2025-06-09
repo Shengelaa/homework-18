@@ -140,7 +140,7 @@ export default function Home() {
           <div className="flex justify-center mt-8 flex-row space-x-4">
             <input
               onChange={(e) => setAdminPass(e.target.value)}
-              type="text"
+              type="password"
               placeholder="Enter Admin Code"
               className="border border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-400 bg-white text-red-700 placeholder-red-300 rounded-xl px-4 py-3 shadow-sm transition-all duration-200 focus:outline-none"
               value={adminPass}
