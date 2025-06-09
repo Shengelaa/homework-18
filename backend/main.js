@@ -28,6 +28,7 @@ const io = new Server(server, {
 app.use(
   cors({
     origin: "https://chatapplication-sigma.vercel.app",
+
     credentials: true,
   })
 );
@@ -244,6 +245,42 @@ app.get("/count", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch count" });
   }
 });
+
+app.post("/rating", async (req, res) => {
+  try {
+    const { stars } = req.body;
+    if (typeof stars !== "number" || stars < 1 || stars > 5) {
+      return res
+        .status(400)
+        .json({ error: "Stars must be a number between 1 and 5" });
+    }
+
+    const Ratings = require("./models/Rating");
+    let ratingDoc = await Ratings.findOne({});
+    if (!ratingDoc) {
+      ratingDoc = new Ratings({ ratings: [stars] });
+    } else {
+      ratingDoc.ratings.push(stars);
+    }
+    await ratingDoc.save();
+    res
+      .status(201)
+      .json({ message: "Rating saved", ratings: ratingDoc.ratings });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save rating" });
+  }
+});
+app.get("/rating", async (req, res) => {
+  try {
+    const Ratings = require("./models/Rating");
+    const ratingDoc = await Ratings.findOne({});
+    res.json({ ratings: ratingDoc?.ratings ?? [] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch ratings" });
+  }
+});
+
+// ...existing code...
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
