@@ -11,19 +11,16 @@ const messageSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { _id: false }
+  { _id: true }
 );
 
-const privateRoomSchema = new mongoose.Schema(
-  {
-    roomId: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    messages: [messageSchema],
-  }
-
-);
+const privateRoomSchema = new mongoose.Schema({
+  roomId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  messages: [messageSchema],
+});
 
 module.exports = mongoose.model("privateChat", privateRoomSchema);

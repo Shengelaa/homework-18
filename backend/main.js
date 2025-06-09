@@ -3,7 +3,10 @@ const express = require("express");
 const connectToDb = require("./db/connectToDb");
 const publicChatModel = require("./models/publicChat.model");
 const privateMessageModel = require("./models/privateChat.model");
-
+const {
+  upload,
+  deleteFromCloudinary,
+} = require("./config/connectToCloudinary");
 const { Server } = require("socket.io");
 const app = express();
 connectToDb();
@@ -17,41 +20,57 @@ const io = new Server(server, {
   },
 });
 
+const isBase64Image = (str) => {
+  return typeof str === "string" && str.startsWith("data:image/");
+};
+
 io.on("connection", (socket) => {
   socket.on("joinRoom", async ({ roomId, userEmail }) => {
     socket.join(roomId);
-    const roomMessages = await privateMessageModel
-      .findOne({ roomId })
-      .then((room) => {
-        if (room) {
-          socket.emit("roomMessages", { roomId, messages: room.messages });
-        } else {
-          socket.emit("roomMessages", { roomId, messages: [] });
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching room messages:", err);
+    try {
+      const room = await privateMessageModel.findOne({ roomId });
+      if (room) {
+        socket.emit("roomMessages", { roomId, messages: room.messages });
+      } else {
         socket.emit("roomMessages", { roomId, messages: [] });
-      });
-
+      }
+    } catch (err) {
+      console.error("Error fetching room messages:", err);
+      socket.emit("roomMessages", { roomId, messages: [] });
+    }
     console.log(`${userEmail} Joined ${roomId}`);
   });
 
   socket.on("privateMessage", async ({ roomId, userEmail, msg }) => {
-    const existingRoom = await privateMessageModel.findOne({ roomId });
-    if (existingRoom) {
-      existingRoom.messages.push({ userEmail, msg });
-      existingRoom.save();
-    } else if (!existingRoom) {
-      const newMessage = new privateMessageModel({
-        roomId,
-        messages: [{ userEmail, msg }],
-      });
+    let messageContent = msg;
 
-      newMessage.save();
+    if (isBase64Image(msg)) {
+      try {
+        const result = await upload(msg, "privateMessages");
+        messageContent = result.secure_url;
+      } catch (err) {
+        console.error("Cloudinary upload failed:", err);
+        return socket.emit("error", "Image upload failed");
+      }
     }
 
-    io.to(roomId).emit("privateMessage", { roomId, userEmail, msg });
+    let existingRoom = await privateMessageModel.findOne({ roomId });
+    if (existingRoom) {
+      existingRoom.messages.push({ userEmail, msg: messageContent });
+      await existingRoom.save();
+    } else {
+      const newMessage = new privateMessageModel({
+        roomId,
+        messages: [{ userEmail, msg: messageContent }],
+      });
+      await newMessage.save();
+    }
+
+    io.to(roomId).emit("privateMessage", {
+      roomId,
+      userEmail,
+      msg: messageContent,
+    });
   });
 
   socket.on("JoinpublicRoom", async ({ userEmail }) => {
@@ -62,10 +81,25 @@ io.on("connection", (socket) => {
     console.log(`${userEmail} Joined publicRoom`);
   });
 
-  socket.on("publicMessage", ({ userEmail, msg }) => {
-    const newMessage = new publicChatModel({ userEmail, msg });
-    newMessage.save();
-    io.to("publicRoom").emit("publicMessage", { userEmail, msg });
+  socket.on("publicMessage", async ({ userEmail, msg }) => {
+    let messageContent = msg;
+
+    if (isBase64Image(msg)) {
+      try {
+        const result = await upload(msg, "publicMessages");
+        messageContent = result.secure_url;
+      } catch (err) {
+        console.error("Cloudinary upload failed:", err);
+        return socket.emit("error", "Image upload failed");
+      }
+    }
+
+    const newMessage = new publicChatModel({ userEmail, msg: messageContent });
+    await newMessage.save();
+    io.to("publicRoom").emit("publicMessage", {
+      userEmail,
+      msg: messageContent,
+    });
   });
 
   socket.on("deletePublicMessage", async ({ messageId }) => {
@@ -77,6 +111,7 @@ io.on("connection", (socket) => {
       console.error("Error deleting public message:", error);
     }
   });
+
   socket.on("adminPannel", async () => {
     const publicMessages = await publicChatModel.find();
     const privateMessages = await privateMessageModel.find();
@@ -99,7 +134,11 @@ io.on("connection", (socket) => {
 
       await room.save();
 
-      io.to(roomId).emit("privateMessagesUpdated", room.messages);
+      // Emit both roomId and updated messages for correct frontend update
+      io.to(roomId).emit("privateMessagesUpdated", {
+        roomId,
+        messages: room.messages,
+      });
 
       io.emit("privateRoomsUpdated");
     } catch (err) {

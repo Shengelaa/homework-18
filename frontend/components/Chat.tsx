@@ -3,6 +3,7 @@
 import socket from "@/config/sockets";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import "../app/globals.css";
+import cameraImg from "../public/cam.png";
 
 type PropType = {
   roomId: string;
@@ -41,6 +42,21 @@ export default function Chat({ roomId, userEmail }: PropType) {
     setMsg("");
   };
 
+  const handleImageUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      const newMsg = {
+        roomId,
+        userEmail,
+        msg: base64String,
+        timestamp: new Date().toISOString(),
+      };
+      socket.emit("privateMessage", newMsg);
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     socket.emit("joinRoom", { roomId, userEmail });
 
@@ -72,6 +88,10 @@ export default function Chat({ roomId, userEmail }: PropType) {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const isImageUrl = (url: string) =>
+    url.startsWith("https://res.cloudinary.com") &&
+    /\.(jpg|jpeg|png|webp|gif|svg)$/.test(url);
+
   return (
     <div className="flex flex-col h-screen w-screen bg-gradient-to-br from-purple-200 to-indigo-300 p-2 sm:p-4">
       <div className="w-full max-w-3xl mx-auto bg-white shadow-lg rounded-lg p-4 flex flex-col h-full">
@@ -80,7 +100,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
             💬 Room: {roomId}
           </h1>
           <button
-            className="text-sm text-purple-600 hover:text-purple-800 font-semibold"
+            className="text-sm text-purple-600 hover:text-purple-800 font-semibold cursor-pointer"
             onClick={() => window.location.reload()}
           >
             Leave Room
@@ -98,13 +118,23 @@ export default function Chat({ roomId, userEmail }: PropType) {
               return (
                 <div
                   key={i}
-                  className={`max-w-md px-4 py-2 rounded-xl animate-fadeIn ${
+                  className={`max-w-sm px-4 py-2 rounded-xl animate-fadeIn ${
                     isOwn
                       ? "bg-purple-200 ml-auto text-right"
                       : "bg-white border border-gray-300"
                   }`}
                 >
-                  <p className="text-gray-800 break-words">{el.msg}</p>
+                  <p className="text-gray-800 break-words">
+                    {isImageUrl(el.msg) ? (
+                      <img
+                        src={el.msg}
+                        alt="sent"
+                        className="rounded-md max-w-xs max-h-32 mx-auto"
+                      />
+                    ) : (
+                      el.msg
+                    )}
+                  </p>
                   <div className="flex justify-between text-xs text-gray-500 mt-1 select-none">
                     <span>{isOwn ? "You" : el.userEmail}</span>
                     <time>{formatTime(el.timestamp)}</time>
@@ -126,13 +156,31 @@ export default function Chat({ roomId, userEmail }: PropType) {
             className="w-full sm:flex-1 rounded-full border border-purple-400 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-300"
             value={msg}
             onChange={(e) => setMsg(e.target.value)}
-            required
             autoComplete="off"
           />
-
+          <input
+            type="file"
+            accept="image/*"
+            id="imageInput"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImageUpload(file);
+            }}
+          />
+          <label
+            htmlFor="imageInput"
+            className="flex items-center justify-center  max-w-[60px] w-full bg-purple-600 rounded-full cursor-pointer"
+          >
+            <img
+              src={cameraImg.src}
+              alt="Camera Icon"
+              className="w-6.5 h-6.5"
+            />
+          </label>
           <button
             type="submit"
-            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2 rounded-full shadow transition"
+            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2 rounded-full shadow transition cursor-pointer"
           >
             Send
           </button>
