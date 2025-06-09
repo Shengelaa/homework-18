@@ -94,7 +94,7 @@ io.on("connection", (socket) => {
       }
 
       room.messages = room.messages.filter(
-        (message) => message._id !== messageId
+        (message) => message._id.toString() !== messageId
       );
 
       await room.save();
