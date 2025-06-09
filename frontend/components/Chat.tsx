@@ -1,5 +1,6 @@
 "use client";
 
+import heic2any from "heic2any";
 import socket from "@/config/sockets";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import "../app/globals.css";
@@ -42,7 +43,24 @@ export default function Chat({ roomId, userEmail }: PropType) {
     setMsg("");
   };
 
-  const handleImageUpload = (file: File) => {
+  const handleImageUpload = async (file: File) => {
+    let uploadFile = file;
+    if (file.type === "image/heic" || file.name.endsWith(".heic")) {
+      try {
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+        });
+        uploadFile = new File(
+          [convertedBlob],
+          file.name.replace(/\.heic$/i, ".jpg"),
+          { type: "image/jpeg" }
+        );
+      } catch (err) {
+        alert("Failed to convert HEIC image. Please try another image.");
+        return;
+      }
+    }
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
@@ -54,7 +72,7 @@ export default function Chat({ roomId, userEmail }: PropType) {
       };
       socket.emit("privateMessage", newMsg);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(uploadFile);
   };
 
   useEffect(() => {
