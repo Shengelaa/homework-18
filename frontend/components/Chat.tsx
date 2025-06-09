@@ -47,10 +47,14 @@ export default function Chat({ roomId, userEmail }: PropType) {
     let uploadFile = file;
     if (file.type === "image/heic" || file.name.endsWith(".heic")) {
       try {
-        const convertedBlob = await heic2any({
+        const converted = await heic2any({
           blob: file,
           toType: "image/jpeg",
         });
+  
+        const convertedBlob = Array.isArray(converted)
+          ? converted[0]
+          : converted;
         uploadFile = new File(
           [convertedBlob],
           file.name.replace(/\.heic$/i, ".jpg"),
