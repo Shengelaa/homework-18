@@ -51,7 +51,6 @@ export default function Chat({ roomId, userEmail }: PropType) {
           blob: file,
           toType: "image/jpeg",
         });
-  
         const convertedBlob = Array.isArray(converted)
           ? converted[0]
           : converted;
@@ -123,7 +122,9 @@ export default function Chat({ roomId, userEmail }: PropType) {
           </h1>
           <button
             className="text-sm text-purple-600 hover:text-purple-800 font-semibold cursor-pointer"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              if (typeof window !== "undefined") window.location.reload();
+            }}
           >
             Leave Room
           </button>
