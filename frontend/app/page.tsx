@@ -18,6 +18,7 @@ export default function Home() {
   const [totalMessages, setTotalMessages] = useState<number | null>(null);
 
   useEffect(() => {
+    console.log("fetching total messages here");
     fetch("https://homework-18-production-8b06.up.railway.app/count")
       .then((res) => res.json())
       .then((data) => {
