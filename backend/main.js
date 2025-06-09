@@ -111,7 +111,6 @@ io.on("connection", (socket) => {
         message.msg &&
         message.msg.startsWith("https://res.cloudinary.com")
       ) {
-    
         const publicId = message.msg
           .split("/")
           .slice(-2)
@@ -143,14 +142,12 @@ io.on("connection", (socket) => {
         return socket.emit("error", "Room not found");
       }
 
- 
       const messageToDelete = room.messages.id(messageId);
       if (
         messageToDelete &&
         typeof messageToDelete.msg === "string" &&
         messageToDelete.msg.startsWith("https://res.cloudinary.com")
       ) {
-
         const publicId = messageToDelete.msg
           .split("/")
           .slice(-2)

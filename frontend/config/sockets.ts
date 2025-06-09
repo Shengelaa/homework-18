@@ -1,11 +1,5 @@
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 
-let socket: Socket | null = null;
-
-export default function getSocket(): Socket | null {
-  if (typeof window === "undefined") return null;
-  if (!socket) {
-    socket = io("https://homework-18-production-8b06.up.railway.app/"); // your actual backend URL
-  }
-  return socket;
-}
+// const socket = io("https://homework-18-production.up.railway.app/");
+const socket = io("https://homework-18-production-8b06.up.railway.app/");
+export default socket;

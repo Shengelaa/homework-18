@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import getSocket from "@/config/sockets";
+import socket from "@/config/sockets";
 
 type PublicMessage = {
   _id: string;
@@ -22,41 +22,24 @@ type PrivateRoom = {
 };
 
 export default function Admin() {
-  const [socket, setSocket] = useState<any>(null);
   const [publicMessages, setPublicMessages] = useState<PublicMessage[]>([]);
   const [privateRooms, setPrivateRooms] = useState<PrivateRoom[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Init socket client-side only
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const s = getSocket();
-      setSocket(s);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-
     socket.emit("adminPannel");
 
-    const handleAdminPanel = ({
-      publicMessages,
-      privateMessages,
-    }: {
-      publicMessages: PublicMessage[];
-      privateMessages: PrivateRoom[];
-    }) => {
+    socket.on("adminPannel", ({ publicMessages, privateMessages }) => {
       setPublicMessages(publicMessages);
       setPrivateRooms(privateMessages);
       setLoading(false);
-    };
+    });
 
-    const handlePublicUpdate = (updatedPublicMessages: PublicMessage[]) => {
+    socket.on("publicMessagesUpdated", (updatedPublicMessages) => {
       setPublicMessages(updatedPublicMessages);
-    };
+    });
 
-    const handlePrivateUpdate = (updatedMessages: PrivateMessage[]) => {
+    socket.on("privateMessagesUpdated", (updatedMessages) => {
       setPrivateRooms((rooms) =>
         rooms.map((room) => {
           if (
@@ -68,46 +51,40 @@ export default function Admin() {
           return room;
         })
       );
-    };
+    });
 
-    const handleRoomUpdate = () => {
+    socket.on("privateRoomsUpdated", () => {
       socket.emit("adminPannel");
-    };
-
-    socket.on("adminPannel", handleAdminPanel);
-    socket.on("publicMessagesUpdated", handlePublicUpdate);
-    socket.on("privateMessagesUpdated", handlePrivateUpdate);
-    socket.on("privateRoomsUpdated", handleRoomUpdate);
+    });
 
     return () => {
-      socket.off("adminPannel", handleAdminPanel);
-      socket.off("publicMessagesUpdated", handlePublicUpdate);
-      socket.off("privateMessagesUpdated", handlePrivateUpdate);
-      socket.off("privateRoomsUpdated", handleRoomUpdate);
+      socket.off("adminPannel");
+      socket.off("publicMessagesUpdated");
+      socket.off("privateMessagesUpdated");
+      socket.off("privateRoomsUpdated");
     };
-  }, [socket]);
+  }, []);
 
   const handleDeletePublicMessage = (messageId: string) => {
-    socket?.emit("deletePublicMessage", { messageId });
+    socket.emit("deletePublicMessage", { messageId });
   };
 
   const handleDeletePrivateMessage = (roomId: string, messageId: string) => {
-    socket?.emit("deletePrivateMessage", { roomId, messageId });
+    socket.emit("deletePrivateMessage", { roomId, messageId });
   };
 
   const handleDeletePrivateRoom = (roomId: string) => {
     if (
-      typeof window !== "undefined" &&
-      confirm(`Delete room ${roomId} and all its messages?`)
+      confirm(
+        `Are you sure you want to delete room ${roomId} and all its messages?`
+      )
     ) {
-      socket?.emit("deletePrivateRoom", { roomId });
+      socket.emit("deletePrivateRoom", { roomId });
     }
   };
 
   const handleGoBack = () => {
-    if (typeof window !== "undefined") {
-      window.location.reload();
-    }
+    window.location.reload();
   };
 
   if (loading)
@@ -132,7 +109,6 @@ export default function Admin() {
         Admin Panel
       </h1>
 
-      {/* Public Messages */}
       <section>
         <h2 className="text-3xl font-semibold mb-5 text-red-700 border-b-2 border-red-300 pb-2">
           Public Messages
@@ -162,7 +138,6 @@ export default function Admin() {
         )}
       </section>
 
-      {/* Private Rooms */}
       <section>
         <h2 className="text-3xl font-semibold mb-6 text-indigo-800 border-b-2 border-indigo-300 pb-2">
           Private Rooms

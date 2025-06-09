@@ -1,14 +1,13 @@
 "use client";
 
+import socket from "@/config/sockets";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
-import getSocket from "@/config/sockets";
 import "../app/globals.css";
 
 type PropType = {
   userEmail: string;
   roomId: string;
 };
-
 type MessageType = {
   userEmail: string;
   msg: string;
@@ -18,45 +17,20 @@ type MessageType = {
 export default function PublicChat({ userEmail }: PropType) {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [msg, setMsg] = useState("");
-  const [socket, setSocket] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const listenerAttached = useRef(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const s = getSocket();
-      setSocket(s);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.emit("JoinpublicRoom", { userEmail });
-
-    const handlePublicMsg = (data: MessageType) => {
-      setMessages((prev) => [...prev, data]);
-    };
-
-    const handlePublicMsgs = (data: MessageType[]) => {
-      setMessages(data);
-    };
-
-    socket.on("publicMessage", handlePublicMsg);
-    socket.on("publicMessages", handlePublicMsgs);
-
-    return () => {
-      socket.off("publicMessage", handlePublicMsg);
-      socket.off("publicMessages", handlePublicMsgs);
-    };
-  }, [socket, userEmail]);
-
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
 
   const handleSendPublicMsg = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!msg.trim() || !socket) return;
+    if (!msg.trim()) return;
 
     const newMsg: MessageType = {
       userEmail,
@@ -67,6 +41,28 @@ export default function PublicChat({ userEmail }: PropType) {
     socket.emit("publicMessage", newMsg);
     setMsg("");
   };
+
+  useEffect(() => {
+    if (listenerAttached.current) return;
+
+    socket.emit("JoinpublicRoom", { userEmail });
+
+    socket.on("publicMessage", (data: MessageType) => {
+      setMessages((prev) => [...prev, data]);
+    });
+
+    socket.on("publicMessages", (data: MessageType[]) => {
+      setMessages(data);
+    });
+
+    listenerAttached.current = true;
+
+    return () => {
+      socket.off("publicMessage");
+      socket.off("publicMessages");
+      listenerAttached.current = false;
+    };
+  }, []);
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return "";
@@ -83,9 +79,7 @@ export default function PublicChat({ userEmail }: PropType) {
           </h1>
           <button
             className="text-sm text-green-600 hover:text-green-800 font-semibold"
-            onClick={() => {
-              if (typeof window !== "undefined") window.location.reload();
-            }}
+            onClick={() => window.location.reload()}
           >
             Leave
           </button>
