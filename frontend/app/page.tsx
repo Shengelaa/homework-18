@@ -2,16 +2,18 @@
 
 import Chat from "@/components/Chat";
 import PublicChat from "@/components/PublicChat";
+import Admin from "@/components/Admin";
 import socket from "@/config/sockets";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 
 export default function Home() {
   const [publicEmail, setPublicEmail] = useState("");
   const [roomId, setRoomId] = useState("");
   const [userEmail, setUserEmail] = useState("");
-
+  const [adminPass, setAdminPass] = useState("");
   const [showChat, setShowChat] = useState(false);
   const [showPublicChat, setShowPublicChat] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const handleJoinRoom = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -24,6 +26,18 @@ export default function Home() {
     socket.emit("JoinpublicRoom", { userEmail: publicEmail });
     setShowPublicChat(true);
   };
+
+  const handleAdminPannel = () => {
+    if (adminPass !== process.env.NEXT_PUBLIC_ADMIN_SECRET) {
+      alert("Invalid Admin Code");
+      return;
+    }
+    setShowAdminPanel(true);
+  };
+
+  if (showAdminPanel) {
+    return <Admin />;
+  }
 
   return (
     <div
@@ -97,6 +111,22 @@ export default function Home() {
               </button>
             </form>
           </section>
+
+          <div className="flex justify-center mt-8 flex-row space-x-4">
+            <input
+              onChange={(e) => setAdminPass(e.target.value)}
+              type="text"
+              placeholder="Enter Admin Code"
+              className="border border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-400 bg-white text-red-700 placeholder-red-300 rounded-xl px-4 py-3 shadow-sm transition-all duration-200 focus:outline-none"
+              value={adminPass}
+            />
+            <button
+              onClick={handleAdminPannel}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            >
+              Admin Panel
+            </button>
+          </div>
         </div>
       )}
     </div>

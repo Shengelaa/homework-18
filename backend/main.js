@@ -67,6 +67,54 @@ io.on("connection", (socket) => {
     newMessage.save();
     io.to("publicRoom").emit("publicMessage", { userEmail, msg });
   });
+
+
+  socket.on("deletePublicMessage", async ({ messageId }) => {
+    try {
+      await publicChatModel.findByIdAndDelete(messageId);
+      const publicMessages = await publicChatModel.find();
+      io.emit("publicMessagesUpdated", publicMessages);
+    } catch (error) {
+      console.error("Error deleting public message:", error);
+    }
+  });
+  socket.on("adminPannel", async () => {
+    const publicMessages = await publicChatModel.find();
+    const privateMessages = await privateMessageModel.find();
+
+    console.log("Admin panel data:", { publicMessages, privateMessages }); 
+
+    socket.emit("adminPannel", { publicMessages, privateMessages });
+  });
+
+
+  socket.on("deletePrivateMessage", async ({ roomId, messageId }) => {
+    try {
+      const room = await privateMessageModel.findOne({ roomId });
+      if (!room) return;
+
+  
+      room.messages = room.messages.filter(
+        (msg) => msg._id.toString() !== messageId
+      );
+      await room.save();
+
+      io.to(roomId).emit("privateMessagesUpdated", room.messages);
+      socket.emit("privateMessageDeleted", { roomId, messageId });
+    } catch (error) {
+      console.error("Error deleting private message:", error);
+    }
+  });
+
+
+  socket.on("deletePrivateRoom", async ({ roomId }) => {
+    try {
+      await privateMessageModel.deleteOne({ roomId });
+      io.emit("privateRoomsUpdated");
+    } catch (error) {
+      console.error("Error deleting private room:", error);
+    }
+  });
 });
 
 const PORT = process.env.PORT || 4000;
