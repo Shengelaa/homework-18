@@ -83,6 +83,10 @@ export default function Admin() {
     }
   };
 
+  const handleGoBack = () => {
+    window.location.reload();
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -94,6 +98,13 @@ export default function Admin() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-14 bg-gray-50 min-h-screen">
+      <button
+        onClick={handleGoBack}
+        className="mb-6 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow-md transition"
+      >
+        Go Back
+      </button>
+
       <h1 className="text-4xl font-extrabold mb-10 text-center text-indigo-900 drop-shadow-md">
         Admin Panel
       </h1>
