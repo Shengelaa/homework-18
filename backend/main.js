@@ -28,7 +28,6 @@ const io = new Server(server, {
 app.use(
   cors({
     origin: "https://chatapplication-sigma.vercel.app",
-
     credentials: true,
   })
 );

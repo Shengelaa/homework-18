@@ -112,11 +112,11 @@ export default function Home() {
           {/* ⭐ Review Counter */}
 
           <section className="bg-white p-8 rounded-2xl shadow-xl ring-1 ring-green-200 hover:ring-green-300 transition">
-            <div className="flex flex-row items-center justify-space-between align-center justify-between ">
+            <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               <h2 className="text-2xl font-semibold mb-6 text-green-700 border-b border-green-100 pb-2  ">
                 Public Chat
               </h2>
-              <h2 className="mb-4 text-lg font-semibold text-green-700 flex items-center justify-center align-center  ">
+              <h2 className="mb-4 text-sm font-semibold text-green-700 flex items-center justify-center align-center  ">
                 App Rating:&nbsp;
                 <span className="flex items-center ml-2 justify-center align-center mt-[-2px]">
                   {reviewCount === 0 ? (
@@ -162,11 +162,11 @@ export default function Home() {
           </section>
 
           <section className="bg-white p-8 rounded-2xl shadow-xl ring-1 ring-purple-300 hover:ring-purple-400 transition">
-            <div className="flex flex-row items-center justify-space-between align-center justify-between mb-6 ">
+            <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               <h2 className="text-2xl font-semibold mb-6 text-purple-700 border-b border-purple-200 pb-2">
                 Join a Room
               </h2>
-              <h2 className="mb-4 text-lg font-semibold  text-purple-700 flex items-center">
+              <h2 className="mb-4 text-sm font-semibold  text-purple-700 flex items-center">
                 App Rating:&nbsp;
                 <span className="flex items-center ml-2 mt-[-3px]">
                   {reviewCount === 0 ? (
